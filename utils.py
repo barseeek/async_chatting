@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from contextlib import asynccontextmanager
 
@@ -6,25 +7,31 @@ import asyncio
 import aiofiles
 
 
+logger = logging.getLogger('sender')
+
+
 @asynccontextmanager
 async def get_connection(host, port, filename, attempts=3, timeout=5):
     writer = None
     attempts_count = 0
-    while True:
+    reader = None
+    while not reader:
         try:
             reader, writer = await asyncio.open_connection(
                 host, port)
-            await handle_output(filename, 'Установлено соединение\n')
+            logger.info('Connection established\n')
             yield reader, writer
         except ConnectionError:
             if attempts_count < attempts:
+                logger.info('Connection Error, try again\n')
                 if filename:
-                    await handle_output(filename, 'Connection Error, try again')
+                    await handle_output(filename, 'Connection Error, try again\n')
                 attempts_count += 1
                 continue
             else:
+                logger.info(f'{attempts} Connection Error in a row, try again in {timeout} secs\n')
                 if filename:
-                    await handle_output(filename, f'{attempts} Connection Error in a row, try again in {timeout} secs')
+                    await handle_output(filename, 'Connection Error, try again\n')
                 await asyncio.sleep(timeout)
         finally:
             if writer:

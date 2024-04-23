@@ -19,6 +19,8 @@ async def get_connection(host, port, filename, attempts=3, timeout=5):
         try:
             reader, writer = await asyncio.open_connection(
                 host, port)
+            if filename:
+                await handle_output(filename, 'Connection established\n')
             logger.info('Connection established\n')
             yield reader, writer
         except ConnectionError:

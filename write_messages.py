@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 
+import aioconsole
 import aiofiles
 import asyncio
 
@@ -22,7 +23,7 @@ def parse_args():
                         help="Set path to the file where the messages will be written to")
     parser.add_argument("-t", "--token", type=str, default="",
                         help="Set your token")
-    parser.add_argument("-m", "--message", type=str, default="Test message",
+    parser.add_argument("-m", "--message", type=str,
                         help="Set your message")
     parser.add_argument("-n", "--name", type=str, default="Anonymous",
                         help="Set your nickname")
@@ -53,10 +54,9 @@ async def is_token_valid(token, reader, writer):
     return False
 
 
-# async def save_to_file(account_data):
-#     filename = f'credentials_{0}.json'.format(account_data["nickname"])
-#     async with aiofiles.open(filename, mode='w') as f:
-#         await f.write(account_data)
+async def submit_message(writer, message):
+    writer.write(f'{message}\n\n'.encode())
+    await writer.drain()
 
 
 async def register_user(username, reader, writer):
@@ -68,8 +68,13 @@ async def register_user(username, reader, writer):
     else:
         await write_message(writer)
     account_data = await read_message(reader)
-    await save_to_file(account_data)
     return json.loads(account_data)
+
+
+async def get_messages(writer):
+    while True:
+        message = await aioconsole.ainput('Enter your message: ')
+        await submit_message(writer, message)
 
 
 async def main():
@@ -81,15 +86,17 @@ async def main():
     filename = args.filepath
     token = args.token
     username = args.name
+    message = args.message
     async with get_connection(host, port, filename, attempts=3, timeout=5) as (reader, writer):
         if token:
-            auth = await is_token_valid(token, reader, writer)
-            if not auth:
+            if not await is_token_valid(token, reader, writer):
                 logger.error('Non-valid token, check it and try again')
         else:
             await register_user(username, reader, writer)
-
-        await write_message(writer, 'test message\n\n')
+        if message:
+            await submit_message(writer, message)
+        else:
+            await get_messages(writer)
 
 
 if __name__ == '__main__':

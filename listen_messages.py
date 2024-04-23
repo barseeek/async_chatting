@@ -1,8 +1,6 @@
 import argparse
 
 import asyncio
-import aiofiles
-import datetime
 
 from utils import get_connection, handle_output
 
@@ -35,4 +33,4 @@ if __name__ == '__main__':
     try:
         asyncio.run(read_messages(args.host, args.port, args.filepath))
     except KeyboardInterrupt:
-        print()
+        print('Keyboard Interrupt')

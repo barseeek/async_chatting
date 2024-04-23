@@ -2,19 +2,7 @@ import argparse
 
 import asyncio
 
-from utils import get_connection, handle_output
-
-
-async def write_messages(host, port, filename, token, username):
-    async with get_connection(host, port, filename, attempts=3, timeout=5) as (reader, writer):
-        try:
-            while True:
-                message = await reader.readline()
-                if not message:
-                    continue
-                await handle_output(filename, f'{message.decode()}')
-        except ConnectionError:
-            pass
+from utils import get_connection
 
 
 def parse_args():
@@ -35,7 +23,36 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == '__main__':
-    args = parse_args()
+async def read_message(reader):
+    data = await reader.readline()
+    message = data.decode().rstrip('\n')
+    return message
 
-    asyncio.run(write_messages(args.host, args.port, args.filepath, args.token, args.name))
+
+async def write_message(writer, message=None):
+    if not message:
+        message = '\n'
+    writer.write(message.encode())
+    await writer.drain()
+
+
+async def main():
+    args = parse_args()
+    host = args.host
+    port = args.port
+    filename = args.filepath
+    token = args.token
+    async with get_connection(host, port, filename, attempts=3, timeout=5) as (reader, writer):
+        message = await read_message(reader)
+        await write_message(writer)
+        message = await read_message(reader)
+        await write_message(writer, 'Nikita\n')
+        message = await read_message(reader)
+        await write_message(writer, 'test message\n\n')
+
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Keyboard Interrupt')

@@ -1,7 +1,9 @@
+import datetime
+
+from contextlib import asynccontextmanager
+
 import asyncio
 import aiofiles
-import datetime
-from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
@@ -16,13 +18,11 @@ async def get_connection(host, port, filename, attempts=3, timeout=5):
             yield reader, writer
         except ConnectionError:
             if attempts_count < attempts:
-                #logging.debug(error_message)
                 if filename:
                     await handle_output(filename, 'Connection Error, try again')
                 attempts_count += 1
                 continue
             else:
-                #logging.debug(error_message)
                 if filename:
                     await handle_output(filename, f'{attempts} Connection Error in a row, try again in {timeout} secs')
                 await asyncio.sleep(timeout)

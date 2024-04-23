@@ -25,13 +25,13 @@ async def get_connection(host, port, filename, attempts=3, timeout=5):
             yield reader, writer
         except ConnectionError:
             if attempts_count < attempts:
-                logger.info('Connection Error, try again\n')
+                logger.warning('Connection Error, try again\n')
                 if filename:
                     await handle_output(filename, 'Connection Error, try again\n')
                 attempts_count += 1
                 continue
             else:
-                logger.info(f'{attempts} Connection Error in a row, try again in {timeout} secs\n')
+                logger.warning(f'{attempts} Connection Error in a row, try again in {timeout} secs\n')
                 if filename:
                     await handle_output(filename, 'Connection Error, try again\n')
                 await asyncio.sleep(timeout)

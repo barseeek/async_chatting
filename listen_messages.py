@@ -1,9 +1,12 @@
 import argparse
+import logging
 
 import asyncio
 
 from environs import Env
 from utils import get_connection, handle_output
+
+logger = logging.getLogger('listener')
 
 
 async def read_messages(host, port, filename):
@@ -15,7 +18,7 @@ async def read_messages(host, port, filename):
                     continue
                 await handle_output(filename, f'{message.decode()}')
         except ConnectionError:
-            pass
+            logger.error('Connection Error')
 
 
 def parse_args():
@@ -35,8 +38,9 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     args = parse_args()
     try:
         asyncio.run(read_messages(args.host, args.port, args.filepath))
     except KeyboardInterrupt:
-        print('Keyboard Interrupt')
+        logger.info('Keyboard Interrupt')

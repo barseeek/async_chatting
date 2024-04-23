@@ -2,6 +2,7 @@ import argparse
 
 import asyncio
 
+from environs import Env
 from utils import get_connection, handle_output
 
 
@@ -18,12 +19,17 @@ async def read_messages(host, port, filename):
 
 
 def parse_args():
+    env = Env()
+    env.read_env()
     parser = argparse.ArgumentParser(description="Async chat listener")
-    parser.add_argument("-l", "--logging", action='store_true')
-    parser.add_argument("-ho", "--host", type=str, default='minechat.dvmn.org', help="Set the host address")
-    parser.add_argument("-p", "--port", type=int, default=5000,
+    parser.add_argument("-ho", "--host", type=str,
+                        default=env.str('HOST', 'minechat.dvmn.org'),
+                        help="Set the host address")
+    parser.add_argument("-p", "--port", type=int,
+                        default=env.int('PORT_LISTENER', 5000),
                         help="Set the port number on which you want to listen to messages")
-    parser.add_argument("-f", "--filepath", type=str, default="messages.txt",
+    parser.add_argument("-f", "--filepath", type=str,
+                        default=env.str('FILE_PATH', 'messages.txt'),
                         help="Set path to the file where the messages will be written to")
     return parser.parse_args()
 

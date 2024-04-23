@@ -3,9 +3,9 @@ import json
 import logging
 
 import aioconsole
-import aiofiles
 import asyncio
 
+from environs import Env
 from utils import get_connection
 
 
@@ -13,19 +13,26 @@ logger = logging.getLogger('sender')
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Async chat listener")
+    env = Env()
+    env.read_env()
+    parser = argparse.ArgumentParser(description="Async chat writer")
     parser.add_argument("-l", "--logging", action='store_true')
-    parser.add_argument("-ho", "--host", type=str, default='minechat.dvmn.org',
+    parser.add_argument("-ho", "--host", type=str,
+                        default=env.str('HOST', 'minechat.dvmn.org'),
                         help="Set the host address")
-    parser.add_argument("-p", "--port", type=int, default=5050,
+    parser.add_argument("-p", "--port", type=int,
+                        default=env.int('PORT_WRITER', 5050),
                         help="Set the port number on which you want to write messages")
-    parser.add_argument("-f", "--filepath", type=str, default="messages.txt",
+    parser.add_argument("-f", "--filepath", type=str,
+                        default=env.str('FILE_PATH', 'messages.txt'),
                         help="Set path to the file where the messages will be written to")
-    parser.add_argument("-t", "--token", type=str, default="",
+    parser.add_argument("-t", "--token", type=str,
+                        default=env.str('CHAT_TOKEN', ''),
                         help="Set your token")
     parser.add_argument("-m", "--message", type=str,
                         help="Set your message")
-    parser.add_argument("-n", "--name", type=str, default="Anonymous",
+    parser.add_argument("-n", "--name", type=str,
+                        default=env.str('USERNAME', 'Anonymous'),
                         help="Set your nickname")
     return parser.parse_args()
 
@@ -81,6 +88,8 @@ async def main():
     args = parse_args()
     if args.logging:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.disable(logging.CRITICAL)
     host = args.host
     port = args.port
     filename = args.filepath

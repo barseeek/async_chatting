@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 
 import asyncio
@@ -11,7 +12,7 @@ logger = logging.getLogger('sender')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Async chat listener")
-    parser.add_argument("-l", "--logging", action='store_false')
+    parser.add_argument("-l", "--logging", action='store_true')
     parser.add_argument("-ho", "--host", type=str, default='minechat.dvmn.org',
                         help="Set the host address")
     parser.add_argument("-p", "--port", type=int, default=5050,
@@ -42,6 +43,15 @@ async def write_message(writer, message=None):
     await writer.drain()
 
 
+async def is_token_valid(token, reader, writer):
+    message = await read_message(reader)
+    await write_message(writer, f'{token}\n')
+    message = await read_message(reader)
+    if json.loads(message):
+        return True
+    return False
+
+
 async def main():
     args = parse_args()
     if args.logging:
@@ -51,11 +61,16 @@ async def main():
     filename = args.filepath
     token = args.token
     async with get_connection(host, port, filename, attempts=3, timeout=5) as (reader, writer):
-        message = await read_message(reader)
-        await write_message(writer)
-        message = await read_message(reader)
-        await write_message(writer, 'Nikita\n')
-        message = await read_message(reader)
+        if token:
+            auth = await is_token_valid(token, reader, writer)
+            if not auth:
+                logger.error('Non-valid token, check it and try again')
+        else:
+            message = await read_message(reader)
+            await write_message(writer)
+            message = await read_message(reader)
+            await write_message(writer, 'Nikita\n')
+            message = await read_message(reader)
         await write_message(writer, 'test message\n\n')
 
 
